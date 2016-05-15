@@ -16,7 +16,7 @@ var renarrator = "A Person";
 var renarratorEmail = "a.person@anonymous";
 var renarrationStore = "https://oonserdbysewwersheryoula:64f4f6b854d2a118039e9a8116a49d4b65b1f12d@jants.cloudant.com/renos";
 var annotationStore = "https://eyessometormentereeksmus:c113947ed248972ab87d0a3d7cfdd5d57a705047@jants.cloudant.com/annos";
-
+var renOnt = "https://raw.githubusercontent.com/EmrahGuder/Renarration/master/rn/rn.jsonld";
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
@@ -39,7 +39,13 @@ chrome.runtime.onMessage.addListener(
 
 $('body').click(function(event) {
 	var parentDiv = document.getElementById('renarrationDiv');
-	if(renarration_enabled == 1 && window.event.srcElement.id!='renarrationDiv' && !$.contains(parentDiv, window.event.srcElement)){
+	var jsonDiv = parentDiv;
+
+	if($(document.getElementById("annotationJsonDiv")).length>0){
+		jsonDiv = document.getElementById("annotationJsonDiv");
+	}
+
+	if(renarration_enabled == 1 && window.event.srcElement.id!='renarrationDiv' && window.event.srcElement.id!='close' && window.event.srcElement.id!='annotationJsonDiv' && !$.contains(parentDiv, window.event.srcElement) && !$.contains(jsonDiv, window.event.srcElement)){
 		target_element = window.event.srcElement;
 		
 		renarratedElement = target_element;
@@ -78,11 +84,24 @@ $('body').click(function(event) {
 	else if(window.event.srcElement.id=="CloseSettings"){
 		renarration.closeRenDiv();
 	}
+	else if(window.event.srcElement.id.indexOf('jsonAnnotation=')>=0){
+		annotation.showAnnotationJSON(window.event.srcElement.id.split("=")[1]);
+	}	
+	else if(window.event.srcElement.id.indexOf('jsonRenarration=')>=0){
+		renarration.showRenarrationJSON(window.event.srcElement.id.split("=")[1]);
+	}	
 });
 
 $('body').mouseover(function(event) {
 	var parentDiv = document.getElementById('renarrationDiv');
-	if(renarration_enabled == 1 && window.event.srcElement.id!='renarrationDiv' && !$.contains(parentDiv, window.event.srcElement)){
+	var jsonDiv = parentDiv;
+
+	if($(document.getElementById("annotationJsonDiv")).length>0){
+		jsonDiv = document.getElementById("annotationJsonDiv");
+	}
+	
+	
+	if(renarration_enabled == 1 && window.event.srcElement.id!='renarrationDiv' && window.event.srcElement.id!='annotationJsonDiv' && window.event.srcElement.id!='close' && !$.contains(parentDiv, window.event.srcElement) && !$.contains(jsonDiv, window.event.srcElement)){
 		target_element = window.event.srcElement;
 		target_element_style_border = target_element.style.border; 
 		target_element.style.border ='2px dashed red';
@@ -118,6 +137,27 @@ $('body').mouseup(function() {
 		transformText.value = transformText.value  + '[!Annotation=' + annotationReferred.id + '][' + selection +']\n';
 	}
 });
+
+json = {
+	syntaxHighlight: function(jsonString){
+		jsonString = jsonString.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+		return jsonString.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+			var cls = 'number';
+			if (/^"/.test(match)) {
+				if (/:$/.test(match)) {
+					cls = 'key';
+				} else {
+					cls = 'string';
+				}
+			} else if (/true|false/.test(match)) {
+				cls = 'boolean';
+			} else if (/null/.test(match)) {
+				cls = 'null';
+			}
+			return '<span class="' + cls + '">' + match + '</span>';
+       });
+	}
+}
 
 annotation = {
 	getAnnotations: function(){
@@ -157,7 +197,7 @@ annotation = {
 		for(var i=0; i<annotations.length; i++){
 			var current_annotation = JSON.parse(annotations[i]);
 			annotations_table = annotations_table + 
-								'<table id="listOfAnnotationsTable" width="100%"><tr bgcolor="#F6D5AD" id="annotationId=' + i +'"><td align="left">' + current_annotation.creator.name + '</td><td align="right">' + current_annotation.created + '</td></tr>' + 
+								'<table id="listOfAnnotationsTable" width="100%"><tr bgcolor="#F6D5AD" id="annotationId=' + i +'"><td align="left">' + current_annotation.creator.name + '</td><td align="right"><button class="json" id="jsonAnnotation=' + i +'">{...}</button></td></tr>' + 
 								'<tr><td id="annotationId=' + i +'" colspan="2">' + current_annotation.body.text+ '</td></tr></table>';
 		}
 		if(annotations.length>0){
@@ -165,6 +205,24 @@ annotation = {
 		}
 		return annotationsSubDiv;
 	},	
+	showAnnotationJSON: function(annotationId){
+		var ann = JSON.parse(annotations[parseInt(annotationId)]);
+		
+		var renDiv = document.body;
+		
+		if($(document.getElementById("annotationJsonDiv")).length>0){
+			$(document.getElementById("annotationJsonDiv")).replaceWith('');
+		}		
+		
+		var div = document.createElement('div');
+		div.className = "white_content";
+		div.style.display = "block";
+		div.setAttribute('id', 'annotationJsonDiv');
+		
+		div.innerHTML = "<span id='close' onclick='this.parentNode.parentNode.removeChild(this.parentNode); return false;'>x</span><pre>" + json.syntaxHighlight(JSON.stringify(ann ,null, "\t")) + '</pre>';
+		renDiv.appendChild(div);
+		
+	},
 	showAnnotationSelection: function(annotationId){
 		var annId = parseInt(annotationId.substring(13));
 		var selectedAnnotation = JSON.parse(annotations[annId]);
@@ -348,7 +406,7 @@ renarration = {
 		var json_response = JSON.parse(xmlHttp.responseText);
 		
 		
-		// build annotations
+		// build renarrations
 		
 		var j=0;
 		for(var i=0; i<json_response.docs.length; i++){
@@ -362,6 +420,24 @@ renarration = {
 		}
 		
 	},
+	showRenarrationJSON: function(renarrationId){
+		var renn = JSON.parse(storedRenarrations[parseInt(renarrationId)]);
+		
+		var renDiv = document.body;
+		
+		if($(document.getElementById("annotationJsonDiv")).length>0){
+			$(document.getElementById("annotationJsonDiv")).replaceWith('');
+		}		
+		
+		var div = document.createElement('div');
+		div.className = "white_content";
+		div.style.display = "block";
+		div.setAttribute('id', 'annotationJsonDiv');
+		
+		div.innerHTML = "<span id='close' onclick='this.parentNode.parentNode.removeChild(this.parentNode); return false;'>x</span><pre>" + json.syntaxHighlight(JSON.stringify(renn ,null, "\t")) + '</pre>';
+		renDiv.appendChild(div);
+		
+	},	
 	closeRenDiv: function(){
 		var div = document.getElementById("renarrationDiv");
 		$(div).remove();
@@ -503,7 +579,7 @@ renarration = {
 			var current_renarration = JSON.parse(storedRenarrations[i]);
 			renarrations_table = renarrations_table + 
 								'<table width="100%"><tr bgcolor="#F6D5AD"><td align="left">' + current_renarration.renarrator.name + '</td><td align="right">' + current_renarration.renarratedAt + '</td></tr>' + 
-								'<tr><td id="renarrationId=' + i +'" colspan="2">Motivation : ' + current_renarration.motivation + ' &nbsp;<button class="loadRNButton" id="LoadRenarration=' + i +'">Load Renarration</button></td></tr></table>';
+								'<tr><td id="renarrationId=' + i +'" colspan="2">Motivation : ' + current_renarration.motivation + ' &nbsp;<button class="loadRNButton" id="LoadRenarration=' + i +'">Load Renarration</button><button class="json" id="jsonRenarration=' + i +'">{...}</button></td></tr></table>';
 		}
 		if(storedRenarrations.length>0){
 			div.innerHTML = '<b>Renarrations</b><br>' + renarrations_table;
@@ -654,6 +730,7 @@ renarration = {
 		var dt = new Date();
 		var motivation = document.getElementById("renarration_motivation");
 		re_narration["@id"] = renarration.generateUUID();
+		re_narration["@context"] = renOnt;
 		re_narration["@type"] = "rn:Renarration";
 		re_narration["renarratedAt"] = dt.toISOString();
 		re_narration["renarrator"] = {"@type": "foaf:Person", "name": document.getElementById("renarrator").value};
@@ -674,6 +751,7 @@ renarration = {
 		else{
 			re_narration["transform"] = JSON.parse(renarrationTransforms[0]);
 		}
+		//alert("Emrah");
 		renarration.storeRenarration(re_narration);
 		//alert(JSON.stringify(re_narration));
 	},
@@ -687,6 +765,7 @@ renarration = {
 		return uuid;
 	},
 	storeRenarration: function(re_narration){
+		//alert("Burdayim1");
 		xhr = new XMLHttpRequest();
 		var url = renarrationStore;
 		xhr.open("POST", url, true);
@@ -699,7 +778,10 @@ renarration = {
 		}
 		var data = JSON.stringify(re_narration);
 		xhr.send(data);
-		
+		//alert("Burdayim2");
+		storedRenarrations[storedRenarrations.length]=JSON.stringify(re_narration);
+
+		renarration.settingsRenarrationDiv();
 		var span = document.getElementById("renSaveSpan");
 		span.style.display = "block";
 	}	
