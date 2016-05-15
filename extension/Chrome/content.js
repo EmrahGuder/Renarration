@@ -45,7 +45,14 @@ $('body').click(function(event) {
 		renarratedElement = target_element;
 		
 		//alert(renarration.getXPath(target_element));
-		renarration.updateRenarrationDivStyle(target_element.innerHTML);
+		var contentText = "";
+		if(target_element.nodeName.toLowerCase() == 'img'){
+			contentText = '<img src="' + target_element.src +'"></img>';
+		}
+		else{
+			contentText = target_element.innerHTML;
+		}
+		renarration.updateRenarrationDivStyle(contentText);
     }
 	else if(window.event.srcElement.id=='greenRNButton'){
 		// Create Renarration Transform
@@ -380,7 +387,7 @@ renarration = {
 		
 		//alert(JSON.stringify(renToLoad));
 		if(renToLoad.hasOwnProperty('transformList')){
-			alert(renToLoad.transformList.nodes.length);
+			//alert(renToLoad.transformList.nodes.length);
 			for(var i=0; i<renToLoad.transformList.nodes.length; i++){
 				renarration.applyRenarrationTransformOnCurrentPage(renToLoad.transformList.nodes[i]);
 			}
@@ -414,16 +421,16 @@ renarration = {
 				}
 				else{
 					var textToReplace = "";
-					alert('Burdayim');
+					//alert('Burdayim');
 					for(var i=0; i<ren_Transform.narrationList.nodes.length; i++){
 						var currNarration = ren_Transform.narrationList.nodes[i];
 						
 						if(currNarration["@type"]=="dctypes:Image"){
-							alert('Burdayim1');
+							//alert('Burdayim1');
 							textToReplace = textToReplace + '<img src="' + currNarration["@id"] + '"></img>';
 						}
 						else if(currNarration["@type"]=="cnt:ContentAsText"){
-							alert('Burdayim2');
+							//alert('Burdayim2');
 							textToReplace = textToReplace + currNarration["content"];
 						}
 					}
@@ -493,7 +500,9 @@ renarration = {
 								'<table width="100%"><tr bgcolor="#F6D5AD"><td align="left">' + current_renarration.renarrator.name + '</td><td align="right">' + current_renarration.renarratedAt + '</td></tr>' + 
 								'<tr><td id="renarrationId=' + i +'" colspan="2">Motivation : ' + current_renarration.motivation + ' &nbsp;<button class="loadRNButton" id="LoadRenarration=' + i +'">Load Renarration</button></td></tr></table>';
 		}
-		div.innerHTML = '<b>Renarrations</b><br>' + renarrations_table;
+		if(storedRenarrations.length>0){
+			div.innerHTML = '<b>Renarrations</b><br>' + renarrations_table;
+		}
 		return div;		
 		
 		
@@ -529,13 +538,13 @@ renarration = {
 		renarrateSubDiv.className = 'renarrationDiv';
 		renarrateSubDiv.innerHTML = '<div width="95%" align="center"><center><button class="redRNButton" id="CloseSettings">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Close&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button></center></div>'
 								  + '<b><u>Renarration Settings</u></b><br>' 
-								  + '<table><tr><td align="left"><b>Renarrator : </b></td><td><input type="Text" id="renarrator" value="' + renarrator + '"></input></td></tr>'
-								  + '<tr><td align="left"><b>Email :</b></td><td><input type="Text" id="renarratorEmail" value="' + renarratorEmail + '"></input></td></tr></table>'
+								  + '<table class=""><tr><td align="left" class=""><b>Renarrator : </b></td><td><input type="Text" class="renarration_input" id="renarrator" value="' + renarrator + '"></input></td></tr>'
+								  + '<tr><td align="left"><b>Email :</b></td><td><input class="renarration_input" type="Text" id="renarratorEmail" value="' + renarratorEmail + '"></input></td></tr></table>'
 								  + '<b>Motivation :</b> <select id="renarration_motivation"><option value="rn:alternative">Alternative</option><option value="rn:correction">Correction</option><option value="rn:simplification" selected>Simplification</option><option value="rn:translation">Translation</option></select><br>'
 								  + '<button id="saveRenarration" class="createRNButton">Save Renarration</button><span id="renSaveSpan" style="display:none;">&#10004; Renarration is saved...</span><br><br>'
-								  + '<b>API Settings</b><br>'
-								  + '<b>Renarration API</b><br><input type="Text" id="renarrationAPI" style="width:200px" value="' + renarrationStore + '"></input><br>'
-								  + '<b>Annotation API</b><br><input type="Text" id="annotationAPI" style="width:200px" value="' + annotationStore + '"></input><br>'
+								  + '<b><u>API Settings</u></b><br>'
+								  + '<b>Renarration API</b><br><input type="Text" id="renarrationAPI" class="api_input" value="' + renarrationStore + '"></input><br>'
+								  + '<b>Annotation API</b><br><input type="Text" id="annotationAPI" class="api_input" value="' + annotationStore + '"></input><br>'
 								  + '<button id="apiSettings" class="greenRNButton">Save API Settings</button><span id="apiSettingSpan" style="display:none;">&#10004; API settings changed...</span><br><br>';
 								  
 		return renarrateSubDiv;
@@ -560,70 +569,72 @@ renarration = {
 		transformJSON["createdAt"] = dt.toISOString();
 		transformJSON["sourceSelection"] = {"@type": "rn:XPathSelector", "value": renarration.getXPath(renarratedElement)};
 		
-		//alert(JSON.stringify(transformJSON));
-		
-		var textTransform = document.getElementById('renarrationTransform').value.replace(/(\r\n|\n|\r)/gm,"");
-		var transformArray = textTransform.split("[!");
-		var narrationArray = [];
-		var narIth = 0;
-		for(var i=0; i<transformArray.length; i++){
-			if(transformArray[i].length>0){
-				var atomicTransform = transformArray[i].split('][');
-				//alert(atomicTransform[0] + '--' + atomicTransform[1].substring(0, atomicTransform[1].length-1));
-				if(atomicTransform[0]=="Text"){
-					var nodeJSON = {};
-					nodeJSON["@type"] = "cnt:ContentAsText";
-					nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
-					//alert(JSON.stringify(nodeJSON));
-					narrationArray[narIth] = JSON.stringify(nodeJSON);
-					narIth = narIth + 1;
-					
-					transformHTML = transformHTML + nodeJSON["content"];
-				}
-				else {
-					if(atomicTransform[0]=="Image"){
+		if(transformJSON["action"]=="rn:Replace"){	
+			
+			//alert(JSON.stringify(transformJSON));
+			
+			var textTransform = document.getElementById('renarrationTransform').value.replace(/(\r\n|\n|\r)/gm,"");
+			var transformArray = textTransform.split("[!");
+			var narrationArray = [];
+			var narIth = 0;
+			for(var i=0; i<transformArray.length; i++){
+				if(transformArray[i].length>0){
+					var atomicTransform = transformArray[i].split('][');
+					//alert(atomicTransform[0] + '--' + atomicTransform[1].substring(0, atomicTransform[1].length-1));
+					if(atomicTransform[0]=="Text"){
 						var nodeJSON = {};
-						nodeJSON["@id"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
-						nodeJSON["@type"] = "dctypes:Image";
+						nodeJSON["@type"] = "cnt:ContentAsText";
+						nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
 						//alert(JSON.stringify(nodeJSON));
 						narrationArray[narIth] = JSON.stringify(nodeJSON);
-						narIth = narIth + 1;						
-						transformHTML = transformHTML + "<img src='" + nodeJSON["@id"] + "'></img>";
+						narIth = narIth + 1;
+						
+						transformHTML = transformHTML + nodeJSON["content"];
 					}
 					else {
-						if(atomicTransform[0].indexOf('Annotation=')>=0){
+						if(atomicTransform[0]=="Image"){
 							var nodeJSON = {};
-							nodeJSON["@type"] = "cnt:ContentAsText";
-							nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);							
-							nodeJSON["accessedFrom"] = {"@id": atomicTransform[0].split('=')[1], "@type": "Annotation"};
-						
+							nodeJSON["@id"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
+							nodeJSON["@type"] = "dctypes:Image";
 							//alert(JSON.stringify(nodeJSON));
 							narrationArray[narIth] = JSON.stringify(nodeJSON);
 							narIth = narIth + 1;						
-							
-							transformHTML = transformHTML + nodeJSON["content"];
+							transformHTML = transformHTML + "<img src='" + nodeJSON["@id"] + "'></img>";
 						}
-					}					
-				}				
+						else {
+							if(atomicTransform[0].indexOf('Annotation=')>=0){
+								var nodeJSON = {};
+								nodeJSON["@type"] = "cnt:ContentAsText";
+								nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);							
+								nodeJSON["accessedFrom"] = {"@id": atomicTransform[0].split('=')[1], "@type": "Annotation"};
+							
+								//alert(JSON.stringify(nodeJSON));
+								narrationArray[narIth] = JSON.stringify(nodeJSON);
+								narIth = narIth + 1;						
+								
+								transformHTML = transformHTML + nodeJSON["content"];
+							}
+						}					
+					}				
+				}
 			}
-		}
 
-		if(narIth>1){
-			var narrationList = {};
-			narrationList["@type"] = "rn:List";
-			narrationList["nodes"] = [];
-			
-			for(var i=0; i<narrationArray.length; i++){
-				narrationList["nodes"][i] = JSON.parse(narrationArray[i]);
+			if(narIth>1){
+				var narrationList = {};
+				narrationList["@type"] = "rn:List";
+				narrationList["nodes"] = [];
+				
+				for(var i=0; i<narrationArray.length; i++){
+					narrationList["nodes"][i] = JSON.parse(narrationArray[i]);
+				}
+				
+				transformJSON["narrationList"] = narrationList;
 			}
-			
-			transformJSON["narrationList"] = narrationList;
+			else{
+				var narration = JSON.parse(narrationArray[0]);;
+				transformJSON["narration"] = narration;
+			}
 		}
-		else{
-			var narration = JSON.parse(narrationArray[0]);;
-			transformJSON["narration"] = narration;
-		}
-		
 		renarrationTransforms[renarrationTransforms.length] = JSON.stringify(transformJSON);
 		//alert(renarrationTransforms[renarrationTransforms.length-1]);
 		//alert(transformHTML);

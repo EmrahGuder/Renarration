@@ -89,7 +89,23 @@
 	height: 80px;
 	width: 85%;
 	font-family: calibri;
-	font-size: 10px;
+	font-size: 12px;
+}
+
+.renarration_input {
+	border: 2px solid #765942;
+	width: 85%;
+	height: 6px;
+	font-family: calibri;
+	font-size: 11px;
+}
+
+.api_input {
+	border: 2px solid #765942;
+	width: 90%;
+	height: 6px;
+	font-family: calibri;
+	font-size: 11px;
 }
 
 .highlight
@@ -214,4 +230,8 @@ border:1px solid #8bcf54; -webkit-border-radius: 5px; -moz-border-radius: 5px;bo
  background-image: -ms-linear-gradient(top, #8ed058, #7bb64b);
  background-image: -o-linear-gradient(top, #8ed058, #7bb64b);
  background-image: linear-gradient(to bottom, #8ed058, #7bb64b);filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=#8ed058, endColorstr=#7bb64b);
+}
+
+table {
+    width: 100%;
 }
