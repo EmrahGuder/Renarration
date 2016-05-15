@@ -108,7 +108,7 @@ $('body').mouseout(function() {
 $('body').mouseup(function() {
 	var annTable = document.getElementById("listOfAnnotationsTable");
 	
-	if(renarration_enabled == 1 && window.event.srcElement.id!="listOfAnnotationsTable" && renarration.isDescendant(annTable, window.event.srcElement)){
+	if(renarration_enabled == 1 && window.event.srcElement.id.indexOf("annotationId=")>=0){
 		selection = window.getSelection();
 		//alert(selection);
 		var annId = window.event.srcElement.id.split("=")[1];
@@ -131,7 +131,7 @@ annotation = {
 						"type": "Annotation",
 						"target.source": currentURL
 					},
-					"limit": 10,
+					"limit": 20,
 					"skip": 0
 					};	
 		
@@ -349,10 +349,15 @@ renarration = {
 		
 		
 		// build annotations
+		
+		var j=0;
 		for(var i=0; i<json_response.docs.length; i++){
 			var current_ren = json_response.docs[i];
+			
 			if(current_ren.source["@id"]==currentURL){
-				storedRenarrations[i] = JSON.stringify(json_response.docs[i]);
+				
+				storedRenarrations[j] = JSON.stringify(json_response.docs[i]);
+				j = j +1;
 			}
 		}
 		
@@ -529,6 +534,7 @@ renarration = {
 		renarrateSubDiv.innerHTML = '<b>Original Content</b><br>' + content + '<br><br>' 
 								  + '<b>Action</b><br><select id="renarration_action"><option value="rn:Replace" selected>Replace</option><option value="rn:Remove">Remove</option></select><br><br>'
 								  + '<b>Alternative Content</b><br><textarea class="renarration_textArea" id="renarrationTransform"></textarea><br>'
+								  + '<b>Language : </b><input type="Text" class="renarration_input" id="transformLanguage"></input><br>'
 								  + '<table border="1" width="80%"><tr><td align="left"><button id="greenRNButton" class="greenRNButton">Alternate</button> &nbsp;<button id="redRNButton" class="redRNButton">&nbsp;Close&nbsp;</button></td></tr></table>';
 		return renarrateSubDiv;
 	},
@@ -540,7 +546,7 @@ renarration = {
 								  + '<b><u>Renarration Settings</u></b><br>' 
 								  + '<table class=""><tr><td align="left" class=""><b>Renarrator : </b></td><td><input type="Text" class="renarration_input" id="renarrator" value="' + renarrator + '"></input></td></tr>'
 								  + '<tr><td align="left"><b>Email :</b></td><td><input class="renarration_input" type="Text" id="renarratorEmail" value="' + renarratorEmail + '"></input></td></tr></table>'
-								  + '<b>Motivation :</b> <select id="renarration_motivation"><option value="rn:alternative">Alternative</option><option value="rn:correction">Correction</option><option value="rn:simplification" selected>Simplification</option><option value="rn:translation">Translation</option></select><br>'
+								  + '<b>Motivation :</b> <select id="renarration_motivation"><option value="rn:alternative">Alternative</option><option value="rn:correction">Correction</option><option value="rn:elaboration">Elaboration</option><option value="rn:simplification" selected>Simplification</option><option value="rn:translation">Translation</option></select><br>'
 								  + '<button id="saveRenarration" class="createRNButton">Save Renarration</button><span id="renSaveSpan" style="display:none;">&#10004; Renarration is saved...</span><br><br>'
 								  + '<b><u>API Settings</u></b><br>'
 								  + '<b>Renarration API</b><br><input type="Text" id="renarrationAPI" class="api_input" value="' + renarrationStore + '"></input><br>'
@@ -568,6 +574,7 @@ renarration = {
 		transformJSON["action"] = action.options[action.selectedIndex].value;
 		transformJSON["createdAt"] = dt.toISOString();
 		transformJSON["sourceSelection"] = {"@type": "rn:XPathSelector", "value": renarration.getXPath(renarratedElement)};
+		transformJSON["language"] = document.getElementById("transformLanguage").value;
 		
 		if(transformJSON["action"]=="rn:Replace"){	
 			
@@ -649,7 +656,7 @@ renarration = {
 		re_narration["@id"] = renarration.generateUUID();
 		re_narration["@type"] = "rn:Renarration";
 		re_narration["renarratedAt"] = dt.toISOString();
-		re_narration["renarrator"] = {"@type": "foaf:Person", "name": renarrator};
+		re_narration["renarrator"] = {"@type": "foaf:Person", "name": document.getElementById("renarrator").value};
 		re_narration["source"] = {"@id": currentURL, "@type": "rn:Document"};
 		re_narration["motivation"] = motivation.options[motivation.selectedIndex].value;
 		
