@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener(
 		if(renarration_enabled == 1){
 			//alert("Renarration disabled!");
 			renarration_enabled = 0;
-			renarration.removeRenDiv();
+			renarration.removeRenDiv();			
 		}
 		else{
 			renarration.createRenarrationDiv();
@@ -90,6 +90,12 @@ $('body').click(function(event) {
 	else if(window.event.srcElement.id.indexOf('jsonRenarration=')>=0){
 		renarration.showRenarrationJSON(window.event.srcElement.id.split("=")[1]);
 	}	
+	
+	if(renarration_enabled == 1){
+		event.stopPropagation();
+		event.preventDefault();
+		return false;
+	}
 });
 
 $('body').mouseover(function(event) {
@@ -110,7 +116,8 @@ $('body').mouseover(function(event) {
 		if(window.event.srcElement.id.indexOf("annotationId=")>-1){
 			annotation.showAnnotationSelection(window.event.srcElement.id);
 		}
-	}
+	}	
+
 });
 
 $('body').mouseout(function() {
@@ -122,6 +129,7 @@ $('body').mouseout(function() {
 			annotation.copyStyleBackHoveredAnnotationElement(window.event.srcElement.id);
 		}
 	}
+	
 });
 
 $('body').mouseup(function() {
