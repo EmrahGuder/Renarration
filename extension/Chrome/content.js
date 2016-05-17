@@ -90,6 +90,12 @@ $('body').click(function(event) {
 	else if(window.event.srcElement.id.indexOf('jsonRenarration=')>=0){
 		renarration.showRenarrationJSON(window.event.srcElement.id.split("=")[1]);
 	}	
+	else if(window.event.srcElement.id=='jsonRNTransform'){
+		// Create Renarration Transform
+		renarration.showRenarrationTransform();
+	}
+	
+	
 	
 	if(renarration_enabled == 1){
 		event.stopPropagation();
@@ -619,7 +625,7 @@ renarration = {
 								  + '<b>Action</b><br><select id="renarration_action"><option value="rn:Replace" selected>Replace</option><option value="rn:Remove">Remove</option></select><br><br>'
 								  + '<b>Alternative Content</b><br><textarea class="renarration_textArea" id="renarrationTransform"></textarea><br>'
 								  + '<b>Language : </b><input type="Text" class="renarration_input" id="transformLanguage"></input><br>'
-								  + '<table border="1" width="80%"><tr><td align="left"><button id="greenRNButton" class="greenRNButton">Alternate</button> &nbsp;<button id="redRNButton" class="redRNButton">&nbsp;Close&nbsp;</button></td></tr></table>';
+								  + '<table border="1" width="80%"><tr><td align="left"><button id="greenRNButton" class="greenRNButton">Alternate</button> &nbsp;<button id="redRNButton" class="redRNButton">&nbsp;Close&nbsp;</button> <button id="jsonRNTransform" class="json">{...}</button></td></tr></table>';
 		return renarrateSubDiv;
 	},
 	renarrationSettingDiv: function(){
@@ -658,10 +664,10 @@ renarration = {
 		transformJSON["action"] = action.options[action.selectedIndex].value;
 		transformJSON["createdAt"] = dt.toISOString();
 		transformJSON["sourceSelection"] = {"@type": "rn:XPathSelector", "value": renarration.getXPath(renarratedElement)};
-		transformJSON["language"] = document.getElementById("transformLanguage").value;
+		
 		
 		if(transformJSON["action"]=="rn:Replace"){	
-			
+			transformJSON["language"] = document.getElementById("transformLanguage").value;
 			//alert(JSON.stringify(transformJSON));
 			
 			var textTransform = document.getElementById('renarrationTransform').value.replace(/(\r\n|\n|\r)/gm,"");
@@ -733,6 +739,104 @@ renarration = {
 		
 		renarration.closeRenDiv();
 	},
+	showRenarrationTransform: function(){
+		var transformJSON = {};
+		var transformHTML = "";
+		var action = document.getElementById("renarration_action");
+		var dt = new Date();
+		transformJSON["@type"] = "rn:RenarrationTransform";
+		transformJSON["action"] = action.options[action.selectedIndex].value;
+		transformJSON["createdAt"] = dt.toISOString();
+		transformJSON["sourceSelection"] = {"@type": "rn:XPathSelector", "value": renarration.getXPath(renarratedElement)};
+		
+		
+		if(transformJSON["action"]=="rn:Replace"){	
+			transformJSON["language"] = document.getElementById("transformLanguage").value;	
+			//alert(JSON.stringify(transformJSON));
+			
+			var textTransform = document.getElementById('renarrationTransform').value.replace(/(\r\n|\n|\r)/gm,"");
+			var transformArray = textTransform.split("[!");
+			var narrationArray = [];
+			var narIth = 0;
+			for(var i=0; i<transformArray.length; i++){
+				if(transformArray[i].length>0){
+					var atomicTransform = transformArray[i].split('][');
+					//alert(atomicTransform[0] + '--' + atomicTransform[1].substring(0, atomicTransform[1].length-1));
+					if(atomicTransform[0]=="Text"){
+						var nodeJSON = {};
+						nodeJSON["@type"] = "cnt:ContentAsText";
+						nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
+						//alert(JSON.stringify(nodeJSON));
+						narrationArray[narIth] = JSON.stringify(nodeJSON);
+						narIth = narIth + 1;
+						
+						transformHTML = transformHTML + nodeJSON["content"];
+					}
+					else {
+						if(atomicTransform[0]=="Image"){
+							var nodeJSON = {};
+							nodeJSON["@id"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);
+							nodeJSON["@type"] = "dctypes:Image";
+							//alert(JSON.stringify(nodeJSON));
+							narrationArray[narIth] = JSON.stringify(nodeJSON);
+							narIth = narIth + 1;						
+							transformHTML = transformHTML + "<img src='" + nodeJSON["@id"] + "'></img>";
+						}
+						else {
+							if(atomicTransform[0].indexOf('Annotation=')>=0){
+								var nodeJSON = {};
+								nodeJSON["@type"] = "cnt:ContentAsText";
+								nodeJSON["content"] = atomicTransform[1].substring(0, atomicTransform[1].length-1);							
+								nodeJSON["accessedFrom"] = {"@id": atomicTransform[0].split('=')[1], "@type": "Annotation"};
+							
+								//alert(JSON.stringify(nodeJSON));
+								narrationArray[narIth] = JSON.stringify(nodeJSON);
+								narIth = narIth + 1;						
+								
+								transformHTML = transformHTML + nodeJSON["content"];
+							}
+						}					
+					}				
+				}
+			}
+
+			if(narIth>1){
+				var narrationList = {};
+				narrationList["@type"] = "rn:List";
+				narrationList["nodes"] = [];
+				
+				for(var i=0; i<narrationArray.length; i++){
+					narrationList["nodes"][i] = JSON.parse(narrationArray[i]);
+				}
+				
+				transformJSON["narrationList"] = narrationList;
+			}
+			else{
+				var narration = JSON.parse(narrationArray[0]);;
+				transformJSON["narration"] = narration;
+			}
+		}
+		
+		//alert(renarrationTransforms[renarrationTransforms.length-1]);
+		//alert(transformHTML);
+		//alert(JSON.stringify(transformJSON));
+
+		var renDiv = document.body;
+		
+		if($(document.getElementById("annotationJsonDiv")).length>0){
+			$(document.getElementById("annotationJsonDiv")).replaceWith('');
+		}		
+		
+		var div = document.createElement('div');
+		div.className = "white_content";
+		div.style.display = "block";
+		div.setAttribute('id', 'annotationJsonDiv');
+		
+		div.innerHTML = "<span id='close' onclick='this.parentNode.parentNode.removeChild(this.parentNode); return false;'>x</span><pre>" + json.syntaxHighlight(JSON.stringify(transformJSON ,null, "\t")) + '</pre>';
+		renDiv.appendChild(div);
+		
+		
+	},	
 	createRenarration: function(){	
 		var re_narration = {};
 		var dt = new Date();
