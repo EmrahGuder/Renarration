@@ -876,9 +876,21 @@ renarration = {
 		else{
 			re_narration["transform"] = JSON.parse(renarrationTransforms[0]);
 		}
-		//alert("Emrah");
-		alert(JSON.stringify(re_narration));
-		//alert(JSON.stringify(re_narration));
+
+		var renDiv = document.body;
+		
+		if($(document.getElementById("annotationJsonDiv")).length>0){
+			$(document.getElementById("annotationJsonDiv")).replaceWith('');
+		}
+		
+		var div = document.createElement('div');
+		div.className = "white_content";
+		div.style.display = "block";
+		div.setAttribute('id', 'annotationJsonDiv');
+		
+		div.innerHTML = "<span id='close' onclick='this.parentNode.parentNode.removeChild(this.parentNode); return false;'>x</span><pre>" + json.syntaxHighlight(JSON.stringify(re_narration ,null, "\t")) + '</pre>';
+		renDiv.appendChild(div);
+		
 	},	
 	createRenarration: function(){	
 		var re_narration = {};
