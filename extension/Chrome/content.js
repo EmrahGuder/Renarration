@@ -94,6 +94,16 @@ $('body').click(function(event) {
 		// Create Renarration Transform
 		renarration.showRenarrationTransform();
 	}
+	else if(window.event.srcElement.id=='addText'){
+		document.getElementById("renarrationTransform").value = document.getElementById("renarrationTransform").value + "[!Text][Textual content]\n";
+	}
+	else if(window.event.srcElement.id=='addImage'){
+		document.getElementById("renarrationTransform").value = document.getElementById("renarrationTransform").value + "[!Image][http://image-url]\n";
+	}
+	else if(window.event.srcElement.id=='RenarrationJSON'){
+		// Create Renarration Transform
+		renarration.createRenarrationJSON();
+	}	
 	
 	
 	
@@ -211,7 +221,7 @@ annotation = {
 		for(var i=0; i<annotations.length; i++){
 			var current_annotation = JSON.parse(annotations[i]);
 			annotations_table = annotations_table + 
-								'<table id="listOfAnnotationsTable" width="100%"><tr bgcolor="#F6D5AD" id="annotationId=' + i +'"><td align="left">' + current_annotation.creator.name + '</td><td align="right"><button class="json" id="jsonAnnotation=' + i +'">{...}</button></td></tr>' + 
+								'<table id="listOfAnnotationsTable" width="100%"><tr bgcolor="#F6D5AD" id="annotationId=' + i +'"><td align="left">' + current_annotation.creator.name + '</td><td align="right"><button class="json" id="jsonAnnotation=' + i +'">json</button></td></tr>' + 
 								'<tr><td id="annotationId=' + i +'" colspan="2">' + current_annotation.body.text+ '</td></tr></table>';
 		}
 		if(annotations.length>0){
@@ -593,7 +603,7 @@ renarration = {
 			var current_renarration = JSON.parse(storedRenarrations[i]);
 			renarrations_table = renarrations_table + 
 								'<table width="100%"><tr bgcolor="#F6D5AD"><td align="left">' + current_renarration.renarrator.name + '</td><td align="right">' + current_renarration.renarratedAt + '</td></tr>' + 
-								'<tr><td id="renarrationId=' + i +'" colspan="2">Motivation : ' + current_renarration.motivation + ' &nbsp;<button class="loadRNButton" id="LoadRenarration=' + i +'">Load Renarration</button><button class="json" id="jsonRenarration=' + i +'">{...}</button></td></tr></table>';
+								'<tr><td id="renarrationId=' + i +'" colspan="2">Motivation : ' + current_renarration.motivation + ' &nbsp;<button class="loadRNButton" id="LoadRenarration=' + i +'">Load Renarration</button><button class="json" id="jsonRenarration=' + i +'">json</button></td></tr></table>';
 		}
 		if(storedRenarrations.length>0){
 			div.innerHTML = '<b>Renarrations</b><br>' + renarrations_table;
@@ -623,9 +633,9 @@ renarration = {
 		renarrateSubDiv.className = 'renarrationDiv';
 		renarrateSubDiv.innerHTML = '<b>Original Content</b><br>' + content + '<br><br>' 
 								  + '<b>Action</b><br><select id="renarration_action"><option value="rn:Replace" selected>Replace</option><option value="rn:Remove">Remove</option></select><br><br>'
-								  + '<b>Alternative Content</b><br><textarea class="renarration_textArea" id="renarrationTransform"></textarea><br>'
+								  + '<b>Alternative Content</b><br><button id="addText" class="json">Text</button>&nbsp;<button id="addImage" class="json">Image</button><br><textarea class="renarration_textArea" id="renarrationTransform"></textarea><br>'
 								  + '<b>Language : </b><input type="Text" class="renarration_input" id="transformLanguage"></input><br>'
-								  + '<table border="1" width="80%"><tr><td align="left"><button id="greenRNButton" class="greenRNButton">Alternate</button> &nbsp;<button id="redRNButton" class="redRNButton">&nbsp;Close&nbsp;</button> <button id="jsonRNTransform" class="json">{...}</button></td></tr></table>';
+								  + '<table width="80%"><tr><td align="left"><button id="greenRNButton" class="greenRNButton">Alternate</button> &nbsp;<button id="redRNButton" class="redRNButton">&nbsp;Close&nbsp;</button> <button id="jsonRNTransform" class="json">json</button></td></tr></table>';
 		return renarrateSubDiv;
 	},
 	renarrationSettingDiv: function(){
@@ -637,7 +647,7 @@ renarration = {
 								  + '<table class=""><tr><td align="left" class=""><b>Renarrator : </b></td><td><input type="Text" class="renarration_input" id="renarrator" value="' + renarrator + '"></input></td></tr>'
 								  + '<tr><td align="left"><b>Email :</b></td><td><input class="renarration_input" type="Text" id="renarratorEmail" value="' + renarratorEmail + '"></input></td></tr></table>'
 								  + '<b>Motivation :</b> <select id="renarration_motivation"><option value="rn:alternative">Alternative</option><option value="rn:correction">Correction</option><option value="rn:elaboration">Elaboration</option><option value="rn:simplification" selected>Simplification</option><option value="rn:translation">Translation</option></select><br>'
-								  + '<button id="saveRenarration" class="createRNButton">Save Renarration</button><span id="renSaveSpan" style="display:none;">&#10004; Renarration is saved...</span><br><br>'
+								  + '<button id="saveRenarration" class="createRNButton">Save Renarration</button> <button id="RenarrationJSON" class="json">json</button><span id="renSaveSpan" style="display:none;">&#10004; Renarration is saved...</span><br><br>'
 								  + '<b><u>API Settings</u></b><br>'
 								  + '<b>Renarration API</b><br><input type="Text" id="renarrationAPI" class="api_input" value="' + renarrationStore + '"></input><br>'
 								  + '<b>Annotation API</b><br><input type="Text" id="annotationAPI" class="api_input" value="' + annotationStore + '"></input><br>'
@@ -837,6 +847,39 @@ renarration = {
 		
 		
 	},	
+	createRenarrationJSON: function(){	
+		var re_narration = {};
+		var dt = new Date();
+		var motivation = document.getElementById("renarration_motivation");
+		re_narration["@id"] = renarration.generateUUID();
+		re_narration["@context"] = renOnt;
+		re_narration["@type"] = "rn:Renarration";
+		re_narration["renarratedAt"] = dt.toISOString();
+		re_narration["renarrator"] = {"@type": "foaf:Person", "name": document.getElementById("renarrator").value};
+		re_narration["source"] = {"@id": currentURL, "@type": "rn:Document"};
+		re_narration["motivation"] = motivation.options[motivation.selectedIndex].value;
+		
+		renarrator = document.getElementById("renarrator").value;
+		renarratorEmail = document.getElementById("renarratorEmail").value;
+		
+		if(renarrationTransforms.length>1){
+			var transformList = {};
+			transformList["@type"] = "rn:List";
+			transformList["nodes"] = [];
+			
+			
+			for(var i=0; i<renarrationTransforms.length; i++){
+				transformList["nodes"][i] = JSON.parse(renarrationTransforms[i]);
+			}		
+			re_narration["transformList"] = transformList;
+		}
+		else{
+			re_narration["transform"] = JSON.parse(renarrationTransforms[0]);
+		}
+		//alert("Emrah");
+		alert(JSON.stringify(re_narration));
+		//alert(JSON.stringify(re_narration));
+	},	
 	createRenarration: function(){	
 		var re_narration = {};
 		var dt = new Date();
@@ -848,6 +891,9 @@ renarration = {
 		re_narration["renarrator"] = {"@type": "foaf:Person", "name": document.getElementById("renarrator").value};
 		re_narration["source"] = {"@id": currentURL, "@type": "rn:Document"};
 		re_narration["motivation"] = motivation.options[motivation.selectedIndex].value;
+		
+		renarrator = document.getElementById("renarrator").value;
+		renarratorEmail = document.getElementById("renarratorEmail").value;
 		
 		if(renarrationTransforms.length>1){
 			var transformList = {};

@@ -297,3 +297,10 @@ border:1px solid #cacaca; -webkit-border-radius: 2px; -moz-border-radius: 2px;bo
     padding:2px 5px;
     background:#ccc;
 }
+
+input[type=text] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+}
