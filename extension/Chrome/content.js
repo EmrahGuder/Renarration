@@ -421,7 +421,7 @@ renarration = {
 					"selector": {
 						"@type": "rn:Renarration"
 					},
-					"limit": 10,
+					"limit": 1000,
 					"skip": 0
 				};	
 		
